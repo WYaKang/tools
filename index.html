@@ -3,144 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>时间工具</title>
+    <title>实用工具集</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        
+        .tools-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .tool-card {
+            height: 100%;
+            transition: transform 0.2s;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .tool-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #0d6efd;
+            transition: color 0.2s;
+        }
+        
+        .tool-card:hover .tool-icon {
+            color: #0b5ed7;
+        }
+        
+        .tool-description {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        
+        .page-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+        
+        .category-title {
+            margin: 2rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
+            font-size: 1.5rem;
+        }
+
+        .tool-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .tool-link:hover {
+            color: inherit;
+        }
+
+        .tools-section {
+            margin-bottom: 3rem;
+        }
+
+        .tool-title {
+            color: #333;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container py-4">
-        <nav class="nav nav-pills nav-justified mb-4">
-            <button onclick="showSection('timestamp')" class="nav-link">时间戳转换</button>
-            <button onclick="showSection('stopwatch')" class="nav-link active">正计时</button>
-            <button onclick="showSection('countdown')" class="nav-link">倒计时</button>
-            <button onclick="showSection('worldclock')" class="nav-link">世界时钟</button>
-        </nav>
-
-        <!-- 时间戳转换部分 -->
-        <section id="timestamp" class="time-section" style="display: none;">
-            <div class="card">
-                <div class="card-body">
-                    <div class="instructions alert alert-info">
-                        默认时间戳是指格林威治时间1970年01月01日00时00分00秒起至现在的总秒数。
-                        <br>您可以在下方输入时间戳（毫秒）或选择时间进行转换。
-                    </div>
-                    
-                    <!-- 当前时间戳显示 -->
-                    <div class="current-timestamp alert alert-secondary text-center">
-                        <div>当前时间戳：<span id="current-timestamp"></span></div>
-                    </div>
-
-                    <!-- 自定义起始时间 -->
-                    <div class="timestamp-section">
-                        <h5 class="section-title">自定义起始时间</h5>
-                        <div class="custom-epoch mb-3">
-                            <input type="datetime-local" id="epoch-input" class="form-control">
-                            <div class="btn-group mt-2">
-                                <button class="btn btn-secondary" onclick="setCustomEpoch()">设为起始时间</button>
-                                <button class="btn btn-warning" onclick="resetEpoch()">还原默认</button>
+<body>
+    <div class="container tools-container">
+        <h1 class="page-title">实用工具集</h1>
+        
+        <!-- 时间工具类 -->
+        <div class="tools-section">
+            <h2 class="category-title">
+                <i class="fas fa-clock me-2"></i>时间工具
+            </h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <a href="time.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <h5 class="tool-title">时间工具</h5>
+                                <p class="tool-description">
+                                    包含时间戳转换、正计时、倒计时、世界时钟等功能
+                                </p>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- 修改时间戳转时间部分 -->
-                    <div class="timestamp-section">
-                        <h5 class="section-title">时间戳转时间</h5>
-                        <div class="mb-3">
-                            <input type="number" id="timestamp-input" class="form-control" placeholder="请输入时间戳（毫秒）">
-                        </div>
-                        <div class="text-center mb-3">
-                            <button class="btn btn-primary" onclick="convertTimestamp()">转换</button>
-                        </div>
-                        <div id="timestamp-result" class="result-display"></div>
-                    </div>
-                    
-                    <!-- 时间转时间戳 -->
-                    <div class="timestamp-section mt-4">
-                        <h5 class="section-title">时间转时间戳</h5>
-                        <div class="datetime-input mb-3">
-                            <input type="datetime-local" id="datetime-input" class="form-control">
-                            <button class="btn btn-primary mt-2" onclick="convertDatetime()">转换</button>
-                        </div>
-                        <div id="datetime-result" class="result-display"></div>
-                    </div>
+                    </a>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- 正计时部分 -->
-        <section id="stopwatch" class="time-section">
-            <div class="card">
-                <div class="card-body">
-                    <div class="instructions alert alert-info">
-                        使用说明：按空格键或开始按钮开始计时，再次按下记录分段时间，按回车键或停止按钮停止���时。
-                    </div>
-                    <div class="btn-group d-flex justify-content-center mb-4">
-                        <button id="start-stopwatch" class="btn btn-primary">开始/分段</button>
-                        <button id="stop-stopwatch" class="btn btn-danger">停止</button>
-                        <button id="reset-stopwatch" class="btn btn-warning">复位</button>
-                    </div>
-                    <div class="display">00:00:00.000</div>
-                    <div class="laps"></div>
+        <!-- 运势工具类 -->
+        <div class="tools-section">
+            <h2 class="category-title">
+                <i class="fas fa-star me-2"></i>运势工具
+            </h2>
+            <div class="row g-4">
+                <!-- 星座运势工具卡片 -->
+                <div class="col-md-4">
+                    <a href="horoscope.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <h5 class="tool-title">星座运势</h5>
+                                <p class="tool-description">
+                                    查看十二星座每日运势预测
+                                </p>
+                            </div>
+                        </div>
+                    </a>
                 </div>
-            </div>
-        </section>
 
-        <!-- 倒计时部分 -->
-        <section id="countdown" class="time-section" style="display: none;">
-            <div class="card">
-                <div class="card-body">
-                    <div class="instructions alert alert-info">
-                        使用说明：设置时间后，按空格键开始按钮开始/暂停倒计时。
-                    </div>
-                    <div class="btn-group d-flex justify-content-center mb-4">
-                        <button id="start-countdown" class="btn btn-primary">开始/暂停</button>
-                        <button id="reset-countdown" class="btn btn-warning">复位</button>
-                    </div>
-                    <div class="time-input">
-                        <div class="time-input-group">
-                            <span>时</span>
-                            <input type="number" id="hours" min="0" max="23" class="form-control">
+                <!-- 黄历查询工具卡片 -->
+                <div class="col-md-4">
+                    <a href="almanac.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </div>
+                                <h5 class="tool-title">黄历查询</h5>
+                                <p class="tool-description">
+                                    查看每日黄历信息、吉凶宜忌
+                                </p>
+                            </div>
                         </div>
-                        <div class="time-input-group">
-                            <span>分</span>
-                            <input type="number" id="minutes" min="0" max="59" class="form-control">
-                        </div>
-                        <div class="time-input-group">
-                            <span>秒</span>
-                            <input type="number" id="seconds" min="0" max="59" class="form-control">
-                        </div>
-                        <div class="time-input-group">
-                            <span>毫秒</span>
-                            <input type="number" id="milliseconds" min="0" max="999" class="form-control">
-                        </div>
-                    </div>
-                    <div class="display">00:00:00.000</div>
+                    </a>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- 世界时钟部分 -->
-        <section id="worldclock" class="time-section" style="display: none;">
-            <div class="card">
-                <div class="card-body">
-                    <div class="instructions alert alert-info">
-                        可添加最多6个时钟，点击添加按钮选择新时区。
-                    </div>
-                    <div class="clock-container"></div>
+        <!-- 转换工具类 -->
+        <div class="tools-section">
+            <h2 class="category-title">
+                <i class="fas fa-exchange-alt me-2"></i>转换工具
+            </h2>
+            <div class="row g-4">
+                <!-- 单位转换工具卡片 -->
+                <div class="col-md-4">
+                    <a href="unit.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </div>
+                                <h5 class="tool-title">单位转换</h5>
+                                <p class="tool-description">
+                                    长度、重量、温度等常用单位转换工具
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 编码转换工具卡片 -->
+                <div class="col-md-4">
+                    <a href="encode.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                <h5 class="tool-title">编码转换</h5>
+                                <p class="tool-description">
+                                    Base64、URL编码、Unicode等编码转换工具
+                                </p>
+                            </div>
+                        </div>
+                    </a>
                 </div>
             </div>
-        </section>
+        </div>
+
+        <!-- 图片工具类 -->
+        <div class="tools-section">
+            <h2 class="category-title">
+                <i class="fas fa-image me-2"></i>图片工具
+            </h2>
+            <div class="row g-4">
+                <!-- 图片拼接工具 -->
+                <div class="col-md-4">
+                    <a href="image-merge.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-object-group"></i>
+                                </div>
+                                <h5 class="tool-title">图片拼接</h5>
+                                <p class="tool-description">
+                                    多张图片合并拼接，支持横向和纵向拼接
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 图片分割工具 -->
+                <div class="col-md-4">
+                    <a href="image-split.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-th-large"></i>
+                                </div>
+                                <h5 class="tool-title">图片分割</h5>
+                                <p class="tool-description">
+                                    将一张图片分割成多个部分，支持自定义分割
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 图片滤镜工具 -->
+                <div class="col-md-4">
+                    <a href="image-filter.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-adjust"></i>
+                                </div>
+                                <h5 class="tool-title">图片滤镜</h5>
+                                <p class="tool-description">
+                                    添加各种滤镜效果，调整亮度、对比度等
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 图片放大工具 -->
+                <div class="col-md-4">
+                    <a href="image-resize.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-expand-arrows-alt"></i>
+                                </div>
+                                <h5 class="tool-title">图片放大</h5>
+                                <p class="tool-description">
+                                    调整图片尺寸，支持等比例缩放和自定义大小
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 图片镜像工具 -->
+                <div class="col-md-4">
+                    <a href="image-mirror.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-clone"></i>
+                                </div>
+                                <h5 class="tool-title">图片镜像</h5>
+                                <p class="tool-description">
+                                    水平或垂直翻转图片，创建镜像效果
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 图片信息工具 -->
+                <div class="col-md-4">
+                    <a href="image-info.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-info-circle"></i>
+                                </div>
+                                <h5 class="tool-title">图片信息</h5>
+                                <p class="tool-description">
+                                    查看图片详细信息，包括尺寸、格式、EXIF等
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 图片格式转换工具 -->
+                <div class="col-md-4">
+                    <a href="image-convert.html" class="tool-link">
+                        <div class="card tool-card">
+                            <div class="card-body text-center">
+                                <div class="tool-icon">
+                                    <i class="fas fa-sync"></i>
+                                </div>
+                                <h5 class="tool-title">格式转换</h5>
+                                <p class="tool-description">
+                                    支持 JPG、PNG、WebP 等格式互转，可调整质量
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://moment.github.io/luxon/global/luxon.min.js"></script>
-    <script src="https://unpkg.com/@popperjs/core@2"></script>
-    <script src="https://unpkg.com/tippy.js@6"></script>
-    <script src="script.js"></script>
 </body>
 </html> 
