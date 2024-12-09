@@ -34,6 +34,9 @@ const availableTimezones = [
     { timezone: 'Europe/Amsterdam', name: '阿姆斯特丹', offset: '+1:00' }
 ];
 
+// 添加全局变量
+let customEpoch = new Date('1970-01-01T00:00:00.000Z');
+
 // 切换显示区域
 function showSection(section) {
     // 更新显示状态
@@ -75,7 +78,7 @@ function recordLap() {
 function updateLaps() {
     const lapsDiv = document.querySelector('.laps');
     let totalTime = 0;
-    // 创建临时数组存储所有记录
+    // 创建时数组存储所有记录
     const lapRecords = laps.map((lap, i) => {
         totalTime += lap;
         return {
@@ -198,7 +201,7 @@ function updateWorldClocks() {
     
     // 更新时间显示
     clocks.forEach((clock, index) => {
-        const clockElement = container.children[index + 1]; // +1 跳过添加按钮
+        const clockElement = container.children[index + 1]; // +1 过添加按钮
         const digitalTime = clockElement.querySelector('.digital-time');
         const now = new Date();
         
@@ -238,7 +241,7 @@ function addClock() {
         { timezone: 'America/New_York', name: '纽约' },
         { timezone: 'Europe/London', name: '伦敦' },
         { timezone: 'Asia/Tokyo', name: '东京' },
-        { timezone: 'Australia/Sydney', name: '悉尼' }
+        { timezone: 'Australia/Sydney', name: '尼' }
     ];
     
     const available = timezones.filter(tz => 
@@ -420,6 +423,113 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     }, 1000);
+
+    // 添加当前时间戳的自动更新
+    if (document.getElementById('timestamp')) {
+        updateCurrentTimestamp(); // 立即更新一次
+        setInterval(updateCurrentTimestamp, 1000); // 每秒更新
+    }
 });
 
 // 修改时钟样式相关的 CSS
+
+// 在现有代码前面添加时间戳转换相关函数
+function convertTimestamp() {
+    const timestamp = document.getElementById('timestamp-input').value;
+    const resultDiv = document.getElementById('timestamp-result');
+    
+    if (!timestamp) {
+        resultDiv.innerHTML = '<span class="text-danger">请输入时间戳</span>';
+        return;
+    }
+    
+    try {
+        const date = new Date(parseInt(timestamp) + customEpoch.getTime());
+        if (isNaN(date.getTime())) {
+            throw new Error('无效的时间戳');
+        }
+        
+        // 获取本地时间的完整格式（包含星期）
+        const localTimeOptions = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        };
+        
+        const result = `UTC时间：${date.toUTCString()}
+ISO格式：${date.toISOString()}
+本地时间：${date.toLocaleString('zh-CN', localTimeOptions)}`;
+        
+        resultDiv.innerHTML = result;
+    } catch (error) {
+        resultDiv.innerHTML = `<span class="text-danger">${error.message}</span>`;
+    }
+}
+
+function convertDatetime() {
+    const datetimeInput = document.getElementById('datetime-input').value;
+    const resultDiv = document.getElementById('datetime-result');
+    
+    if (!datetimeInput) {
+        resultDiv.innerHTML = '<span class="text-danger">请选择时间</span>';
+        return;
+    }
+    
+    try {
+        const date = new Date(datetimeInput);
+        const timestamp = date.getTime() - customEpoch.getTime();
+        const result = `时间戳（秒）：${Math.floor(timestamp / 1000)}
+时间戳（毫秒）：${timestamp}`;
+        
+        resultDiv.innerHTML = result;
+    } catch (error) {
+        resultDiv.innerHTML = `<span class="text-danger">${error.message}</span>`;
+    }
+}
+
+// 修改时间戳更新函数
+function updateCurrentTimestamp() {
+    const now = new Date();
+    const timestamp = now.getTime() - customEpoch.getTime();
+    document.getElementById('current-timestamp').textContent = `${timestamp} 毫秒`;
+}
+
+// 添加自定义起始时间功能
+function setCustomEpoch() {
+    const epochInput = document.getElementById('epoch-input').value;
+    if (!epochInput) {
+        alert('请选择起始时间');
+        return;
+    }
+    
+    customEpoch = new Date(epochInput);
+    updateCurrentTimestamp();
+    
+    // 更新说明文字
+    const instructions = document.querySelector('#timestamp .instructions');
+    instructions.innerHTML = `
+        当前使用的起始时间为：${customEpoch.toLocaleString()}
+        <br>时间戳为此时间至今的毫秒数。
+    `;
+}
+
+// 添加复位功能
+function resetEpoch() {
+    customEpoch = new Date('1970-01-01T00:00:00.000Z');
+    updateCurrentTimestamp();
+    
+    // 清空输入框
+    document.getElementById('epoch-input').value = '';
+    
+    // 更新说明文字
+    const instructions = document.querySelector('#timestamp .instructions');
+    instructions.innerHTML = `
+        默认时间戳是指格林威治时间1970年01月01日00时00分00秒起至现在的总秒数。
+        <br>您可以在下方输入时间戳（毫秒）或选择时间进行转换。
+    `;
+}

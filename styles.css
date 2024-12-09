@@ -353,4 +353,86 @@ body {
 
 #reset-countdown:hover {
     opacity: 1;
+}
+
+.timestamp-section {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.section-title {
+    color: #333;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.result-display {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    font-family: monospace;
+    min-height: 48px;
+    text-align: left;
+    white-space: pre-wrap;
+}
+
+.datetime-input {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.datetime-input input {
+    max-width: 300px;
+}
+
+#timestamp-input {
+    font-family: monospace;
+}
+
+.current-timestamp {
+    font-family: monospace;
+    font-size: 1.1rem;
+    margin: 1rem 0;
+}
+
+.custom-epoch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.custom-epoch input {
+    max-width: 300px;
+}
+
+.custom-epoch .btn-group {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    width: 100%;
+}
+
+.custom-epoch .btn {
+    flex: 1;
+    max-width: 150px;
+}
+
+.timestamp-input {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.timestamp-input input {
+    width: 100%;
+}
+
+.timestamp-input button {
+    width: 200px;
 } 
