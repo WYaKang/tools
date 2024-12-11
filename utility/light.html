@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>屏幕补光灯</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        body:hover {
+            cursor: auto;
+        }
+
+        #lightScreen {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            transition: background-color 0.3s;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .control-group label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .color-presets {
+            display: flex;
+            gap: 10px;
+        }
+
+        .color-preset {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+
+        .color-preset:hover {
+            transform: scale(1.1);
+        }
+
+        .color-preset.active {
+            border-color: #0d6efd;
+        }
+
+        .brightness-control {
+            width: 150px;
+        }
+
+        .temperature-control {
+            width: 150px;
+        }
+
+        .home-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #333;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .home-link:hover {
+            transform: translateY(-2px);
+            color: #333;
+        }
+
+        .fullscreen-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border: none;
+            color: #333;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            cursor: pointer;
+        }
+
+        .fullscreen-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+                width: 90%;
+            }
+
+            .brightness-control,
+            .temperature-control {
+                width: 100%;
+            }
+
+            .color-presets {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="lightScreen"></div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>预设颜色</label>
+            <div class="color-presets">
+                <div class="color-preset" style="background-color: #FFFFFF" data-color="#FFFFFF"></div>
+                <div class="color-preset" style="background-color: #FFE4B5" data-color="#FFE4B5"></div>
+                <div class="color-preset" style="background-color: #FFB6C1" data-color="#FFB6C1"></div>
+                <div class="color-preset" style="background-color: #E6E6FA" data-color="#E6E6FA"></div>
+                <div class="color-preset" style="background-color: #98FB98" data-color="#98FB98"></div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <label>亮��调节</label>
+            <input type="range" class="form-range brightness-control" id="brightness" min="0" max="100" value="100">
+        </div>
+
+        <div class="control-group">
+            <label>色温调节</label>
+            <input type="range" class="form-range temperature-control" id="temperature" min="2000" max="10000" value="6500">
+        </div>
+
+        <div class="control-group">
+            <label>自定义颜色</label>
+            <input type="color" class="form-control form-control-color" id="colorPicker" value="#FFFFFF">
+        </div>
+    </div>
+
+    <button class="fullscreen-btn" onclick="toggleFullscreen()">
+        <i class="fas fa-expand"></i>
+    </button>
+
+    <a href="../index.html" class="home-link">
+        <i class="fas fa-home"></i>
+    </a>
+
+    <script>
+        const lightScreen = document.getElementById('lightScreen');
+        const brightnessSlider = document.getElementById('brightness');
+        const temperatureSlider = document.getElementById('temperature');
+        const colorPicker = document.getElementById('colorPicker');
+        const colorPresets = document.querySelectorAll('.color-preset');
+        const controls = document.querySelector('.controls');
+        const homeLink = document.querySelector('.home-link');
+        const fullscreenBtn = document.querySelector('.fullscreen-btn');
+
+        let hideTimeout;
+
+        // 更新屏幕颜色
+        function updateScreenColor() {
+            const color = colorPicker.value;
+            const brightness = brightnessSlider.value;
+            const temperature = temperatureSlider.value;
+
+            // 将HEX颜色转换为RGB
+            const rgb = hexToRgb(color);
+            
+            // 应用色温
+            const tempRgb = applyColorTemperature(rgb, temperature);
+            
+            // 应用亮度
+            const finalRgb = applyBrightness(tempRgb, brightness);
+            
+            // 设置背景颜色
+            lightScreen.style.backgroundColor = `rgb(${finalRgb.r}, ${finalRgb.g}, ${finalRgb.b})`;
+        }
+
+        // HEX转RGB
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // 应用色温
+        function applyColorTemperature(rgb, temperature) {
+            // 简化的色温计算
+            const temp = temperature / 100;
+            const warmth = Math.max(0, Math.min(1, (65 - temp) / 45));
+            
+            return {
+                r: Math.min(255, rgb.r + (warmth * 50)),
+                g: Math.min(255, rgb.g + (warmth * 20)),
+                b: Math.min(255, rgb.b - (warmth * 30))
+            };
+        }
+
+        // 应用亮度
+        function applyBrightness(rgb, brightness) {
+            const factor = brightness / 100;
+            return {
+                r: Math.round(rgb.r * factor),
+                g: Math.round(rgb.g * factor),
+                b: Math.round(rgb.b * factor)
+            };
+        }
+
+        // 切换全屏
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.querySelector('.fullscreen-btn i').classList.replace('fa-expand', 'fa-compress');
+            } else {
+                document.exitFullscreen();
+                document.querySelector('.fullscreen-btn i').classList.replace('fa-compress', 'fa-expand');
+            }
+        }
+
+        // 显示控制元素
+        function showControls() {
+            controls.classList.remove('hidden');
+            homeLink.classList.remove('hidden');
+            fullscreenBtn.classList.remove('hidden');
+            
+            // 重置隐藏计时器
+            clearTimeout(hideTimeout);
+            hideTimeout = setTimeout(hideControls, 5000);
+        }
+
+        // 隐藏控制元素
+        function hideControls() {
+            controls.classList.add('hidden');
+            homeLink.classList.add('hidden');
+            fullscreenBtn.classList.add('hidden');
+        }
+
+        // 事件监听
+        brightnessSlider.addEventListener('input', updateScreenColor);
+        temperatureSlider.addEventListener('input', updateScreenColor);
+        colorPicker.addEventListener('input', updateScreenColor);
+
+        // 鼠标移动监听
+        document.addEventListener('mousemove', showControls);
+        
+        // 触摸事件监听（移动设备）
+        document.addEventListener('touchstart', showControls);
+
+        // 预设颜色点击事件
+        colorPresets.forEach(preset => {
+            preset.addEventListener('click', () => {
+                const color = preset.dataset.color;
+                colorPicker.value = color;
+                colorPresets.forEach(p => p.classList.remove('active'));
+                preset.classList.add('active');
+                updateScreenColor();
+            });
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateScreenColor();
+            colorPresets[0].classList.add('active');
+            showControls(); // 初始显示控制元素
+        });
+
+        // 监听全屏变化
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.querySelector('.fullscreen-btn i');
+            if (document.fullscreenElement) {
+                icon.classList.replace('fa-expand', 'fa-compress');
+            } else {
+                icon.classList.replace('fa-compress', 'fa-expand');
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>记忆翻牌 - 趣味游戏</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .card {
+            aspect-ratio: 3/4;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .card-front {
+            background-color: #2c3e50;
+            color: white;
+        }
+        .card-back {
+            background-color: #fff;
+            transform: rotateY(180deg);
+            border: 2px solid #2c3e50;
+            font-size: 4.5rem;
+        }
+        .card.matched .card-back {
+            background-color: #27ae60;
+            color: white;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+        .emoji {
+            font-size: 2rem;
+        }
+        @media (max-width: 576px) {
+            .game-board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">记忆翻牌</h1>
+        
+        <div class="stats">
+            <div>步数: <span id="moves">0</span></div>
+            <div>配对: <span id="matches">0</span>/8</div>
+            <div>时间: <span id="timer">0:00</span></div>
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div class="text-center">
+            <button class="btn btn-primary" onclick="startNewGame()">重新开始</button>
+        </div>
+
+        <!-- 游戏结束弹窗 -->
+        <div class="modal fade" id="gameOverModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">游戏结束！</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>恭喜你完成游戏！</p>
+                        <p>用时: <span id="finalTime"></span></p>
+                        <p>步数: <span id="finalMoves"></span></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" onclick="startNewGame()">再玩一次</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 表情符号数组
+        const emojis = ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
+        let cards = [];
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let moves = 0;
+        let timer = 0;
+        let timerInterval;
+        let isGameStarted = false;
+        let gameModal;
+
+        // 初始化游戏
+        function initGame() {
+            // 创建卡片对数组
+            cards = [...emojis, ...emojis];
+            // 洗牌
+            shuffleCards();
+            // 创建卡片元素
+            createCards();
+            // 重置游戏状态
+            resetGameState();
+        }
+
+        // 洗牌算法
+        function shuffleCards() {
+            for (let i = cards.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [cards[i], cards[j]] = [cards[j], cards[i]];
+            }
+        }
+
+        // 创建卡片元素
+        function createCards() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            cards.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front">?</div>
+                        <div class="card-back">${emoji}</div>
+                    </div>
+                `;
+                card.dataset.index = index;
+                card.addEventListener('click', flipCard);
+                gameBoard.appendChild(card);
+            });
+        }
+
+        // 重置游戏状态
+        function resetGameState() {
+            flippedCards = [];
+            matchedPairs = 0;
+            moves = 0;
+            timer = 0;
+            isGameStarted = false;
+            clearInterval(timerInterval);
+            
+            document.getElementById('moves').textContent = moves;
+            document.getElementById('matches').textContent = matchedPairs;
+            document.getElementById('timer').textContent = '0:00';
+            
+            // 移除所有卡片的翻转和匹配状态
+            document.querySelectorAll('.card').forEach(card => {
+                card.classList.remove('flipped', 'matched');
+            });
+        }
+
+        // 翻牌
+        function flipCard() {
+            if (!isGameStarted) {
+                startTimer();
+                isGameStarted = true;
+            }
+
+            const card = this;
+            
+            // 如果卡片已经翻开或已匹配，或者已经翻开了两张卡片，则不执行操作
+            if (card.classList.contains('flipped') || 
+                card.classList.contains('matched') || 
+                flippedCards.length >= 2) {
+                return;
+            }
+
+            // 翻开卡片
+            card.classList.add('flipped');
+            flippedCards.push(card);
+
+            // 如果翻开了两张卡片��检查是否匹配
+            if (flippedCards.length === 2) {
+                moves++;
+                document.getElementById('moves').textContent = moves;
+                checkMatch();
+            }
+        }
+
+        // 检查匹配
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            const match = cards[card1.dataset.index] === cards[card2.dataset.index];
+
+            if (match) {
+                matchedPairs++;
+                document.getElementById('matches').textContent = matchedPairs;
+                card1.classList.add('matched');
+                card2.classList.add('matched');
+                flippedCards = [];
+
+                if (matchedPairs === 8) {
+                    gameOver();
+                }
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove('flipped');
+                    card2.classList.remove('flipped');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        // 开始计时器
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timer++;
+                const minutes = Math.floor(timer / 60);
+                const seconds = timer % 60;
+                document.getElementById('timer').textContent = 
+                    `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // 游戏结束
+        function gameOver() {
+            clearInterval(timerInterval);
+            const minutes = Math.floor(timer / 60);
+            const seconds = timer % 60;
+            const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('finalTime').textContent = timeString;
+            document.getElementById('finalMoves').textContent = moves;
+            
+            if (!gameModal) {
+                gameModal = new bootstrap.Modal(document.getElementById('gameOverModal'));
+            }
+            gameModal.show();
+        }
+
+        // 开始新游戏
+        function startNewGame() {
+            if (gameModal) {
+                gameModal.hide();
+            }
+            initGame();
+        }
+
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html> 

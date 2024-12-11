@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成语接龙 - 趣味游戏</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .game-area {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .idiom-chain {
+            min-height: 200px;
+            background-color: white;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .idiom-item {
+            display: inline-block;
+            background-color: #e9ecef;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 5px;
+            position: relative;
+        }
+        .idiom-item::after {
+            content: "→";
+            margin-left: 10px;
+            color: #6c757d;
+        }
+        .idiom-item:last-child::after {
+            content: "";
+        }
+        .input-area {
+            margin-bottom: 20px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+        }
+        .hint {
+            color: #6c757d;
+            margin-top: 10px;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 10px;
+            display: none;
+        }
+        .success-message {
+            color: #198754;
+            margin-top: 10px;
+            display: none;
+        }
+        .pinyin {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-left: 5px;
+        }
+        .hints-left {
+            color: #6c757d;
+            margin-top: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">成语接龙</h1>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="btn-group">
+                <button class="btn btn-outline-primary" onclick="setDifficulty('easy')">简单</button>
+                <button class="btn btn-outline-primary" onclick="setDifficulty('medium')">中等</button>
+                <button class="btn btn-outline-primary" onclick="setDifficulty('hard')">困难</button>
+            </div>
+
+            <div>
+                <button class="btn btn-primary" onclick="startGame()">重新开始</button>
+                <button class="btn btn-info" onclick="showInstructions()">游戏说明</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div>得分: <span id="score">0</span></div>
+            <div>剩余时间: <span id="timer">60</span> 秒</div>
+            <div>最高分: <span id="highScore">0</span></div>
+        </div>
+
+        <div class="game-area">
+            <div class="idiom-chain" id="idiomChain"></div>
+            
+            <div class="input-area">
+                <div class="input-group">
+                    <input type="text" id="idiomInput" class="form-control" placeholder="请输入成语..." autocomplete="off">
+                    <button class="btn btn-primary" onclick="submitIdiom()">提交</button>
+                    <button class="btn btn-secondary" onclick="getHint()">提示</button>
+                </div>
+                <div class="hints-left">剩余提示次数：<span id="hintsLeft">3</span></div>
+                <div class="hint" id="hint"></div>
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+            </div>
+        </div>
+
+        <!-- 游戏说明弹窗 -->
+        <div class="modal fade" id="instructionsModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">游戏说明</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6>游戏规则：</h6>
+                        <ul>
+                            <li>根据上一个成语的最后一个字，接上一个成语</li>
+                            <li>成语必须是标准的四字成语</li>
+                            <li>不能重复使用已经出现过的成语</li>
+                            <li>在规定时间内接龙得分越多越好</li>
+                        </ul>
+                        <h6 class="mt-3">难度说明：</h6>
+                        <ul>
+                            <li>简单：60秒，每次接龙+10分</li>
+                            <li>中等：45秒，每次接龙+15分</li>
+                            <li>困难：30秒，每次接龙+20分</li>
+                        </ul>
+                        <h6 class="mt-3">提示功能：</h6>
+                        <ul>
+                            <li>每局游戏有3次提示机会</li>
+                            <li>使用提示会减少当次得分的一半</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏结束弹窗 -->
+        <div class="modal fade" id="gameOverModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">游戏结束</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>游戏结束！</p>
+                        <p>最终得分: <span id="finalScore">0</span></p>
+                        <p>接龙数量: <span id="chainLength">0</span></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" onclick="startGame()">再玩一次</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="idioms.js"></script>
+    <script>
+        // 游戏配置
+        const DIFFICULTY = {
+            easy: { time: 60, score: 10 },
+            medium: { time: 45, score: 15 },
+            hard: { time: 30, score: 20 }
+        };
+
+        // 游戏状态
+        let gameStarted = false;
+        let currentDifficulty = 'easy';
+        let score = 0;
+        let timer = 0;
+        let timerInterval;
+        let usedIdioms = new Set();
+        let currentIdiom = '';
+        let hintsLeft = 3;
+        let gameModal = null;
+
+        // 将所有函数暴露到全局作用域
+        window.initGame = initGame;
+        window.updateDisplay = updateDisplay;
+        window.startTimer = startTimer;
+        window.submitIdiom = submitIdiom;
+        window.showError = showError;
+        window.getHint = getHint;
+        window.setDifficulty = setDifficulty;
+        window.startGame = startGame;
+        window.showInstructions = showInstructions;
+        window.endGame = endGame;
+
+        // 初始化游戏
+        function initGame() {
+            const config = DIFFICULTY[currentDifficulty];
+            score = 0;
+            timer = config.time;
+            usedIdioms.clear();
+            hintsLeft = 3;
+            gameStarted = true;
+
+            // 随机选择一个开始的成语
+            const idioms = Object.keys(idiomDatabase);
+            currentIdiom = idioms[Math.floor(Math.random() * idioms.length)];
+            usedIdioms.add(currentIdiom);
+
+            updateDisplay();
+            startTimer();
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('timer').textContent = timer;
+            document.getElementById('hintsLeft').textContent = hintsLeft;
+            document.getElementById('idiomChain').innerHTML = Array.from(usedIdioms).map(idiom => 
+                `<span class="idiom-item">${idiom}<span class="pinyin">${idiomDatabase[idiom].pinyin}</span></span>`
+            ).join('');
+            document.getElementById('hint').textContent = `提示：需要以"${idiomDatabase[currentIdiom].last}"字开头的成语`;
+            document.getElementById('idiomInput').value = '';
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // 开始计时器
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timer--;
+                document.getElementById('timer').textContent = timer;
+                if (timer <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // 提交成语
+        function submitIdiom() {
+            if (!gameStarted) return;
+
+            const input = document.getElementById('idiomInput').value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+
+            // 验证输入
+            if (!input) {
+                showError('请输入成语');
+                return;
+            }
+
+            if (input.length !== 4) {
+                showError('请输入四字成语');
+                return;
+            }
+
+            if (!idiomDatabase[input]) {
+                showError('不是有效的成语');
+                return;
+            }
+
+            if (usedIdioms.has(input)) {
+                showError('该成语已经使用过了');
+                return;
+            }
+
+            if (input[0] !== idiomDatabase[currentIdiom].last) {
+                showError('成语的第一个字必须是上一个成语的最后一个字');
+                return;
+            }
+
+            // 成功接龙
+            successMessage.textContent = '接龙成功！';
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            // 更新游戏状态
+            currentIdiom = input;
+            usedIdioms.add(input);
+            score += DIFFICULTY[currentDifficulty].score;
+            updateDisplay();
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        // 获取提示
+        function getHint() {
+            if (!gameStarted || hintsLeft <= 0) {
+                showError('提示次数已用完');
+                return;
+            }
+
+            const lastChar = idiomDatabase[currentIdiom].last;
+            const possibleIdioms = Object.keys(idiomDatabase).filter(idiom => 
+                idiom[0] === lastChar && !usedIdioms.has(idiom)
+            );
+
+            if (possibleIdioms.length > 0) {
+                const hint = possibleIdioms[Math.floor(Math.random() * possibleIdioms.length)];
+                document.getElementById('hint').textContent = `提示：可以用"${hint}"`;
+                hintsLeft--;
+                // 使用提示会减少当次得分
+                score = Math.max(0, score - Math.floor(DIFFICULTY[currentDifficulty].score / 2));
+                updateDisplay();
+            } else {
+                document.getElementById('hint').textContent = '没有找到合适的提示';
+            }
+        }
+
+        // 设置难度
+        function setDifficulty(difficulty) {
+            currentDifficulty = difficulty;
+            startGame();
+        }
+
+        // 开始新游戏
+        function startGame() {
+            if (gameModal) {
+                gameModal.hide();
+            }
+            initGame();
+        }
+
+        // 显示游戏说明
+        function showInstructions() {
+            const instructionsModal = new bootstrap.Modal(document.getElementById('instructionsModal'));
+            instructionsModal.show();
+        }
+
+        // 结束游戏
+        function endGame() {
+            gameStarted = false;
+            clearInterval(timerInterval);
+
+            // 更新最高分
+            const highScore = parseInt(localStorage.getItem('idiomHighScore') || '0');
+            if (score > highScore) {
+                localStorage.setItem('idiomHighScore', score);
+                document.getElementById('highScore').textContent = score;
+            }
+
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('chainLength').textContent = usedIdioms.size;
+
+            if (!gameModal) {
+                gameModal = new bootstrap.Modal(document.getElementById('gameOverModal'));
+            }
+            gameModal.show();
+        }
+
+        // 初始化最高分
+        document.getElementById('highScore').textContent = 
+            localStorage.getItem('idiomHighScore') || '0';
+
+        // 绑定回车键提交
+        document.getElementById('idiomInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                submitIdiom();
+            }
+        });
+
+        // 初始化游戏
+        startGame();
+    </script>
+</body>
+</html> 

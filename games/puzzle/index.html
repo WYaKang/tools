@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>滑动拼图 - 趣味游戏</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .game-area {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .puzzle-board {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+            background-color: #dee2e6;
+            border: 2px solid #6c757d;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .puzzle-piece {
+            position: absolute;
+            width: 98px;
+            height: 98px;
+            border: 1px solid #fff;
+            cursor: pointer;
+            transition: transform 0.2s;
+            background-size: 300px 300px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .puzzle-piece:hover {
+            transform: scale(0.98);
+        }
+        .puzzle-piece.dragging {
+            opacity: 0.8;
+            z-index: 1000;
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .control-group {
+            display: flex;
+            gap: 10px;
+            margin: 5px;
+        }
+        .difficulty-controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .difficulty-controls .btn {
+            min-width: 80px;
+            padding: 6px 12px;
+        }
+        .difficulty-stars {
+            color: #ffc107;
+            margin-left: 4px;
+            font-size: 0.9em;
+        }
+        .stats {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .moves, .timer, .best-record {
+            padding: 5px 15px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .example-images {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .example-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 5px;
+            transition: border-color 0.2s;
+        }
+        .example-image:hover {
+            border-color: #0d6efd;
+        }
+        .preview-image {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            margin: 10px auto;
+            display: block;
+            border-radius: 5px;
+        }
+        #uploadInput {
+            display: none;
+        }
+        .upload-preview {
+            max-width: 100%;
+            margin: 10px 0;
+        }
+        .crop-area {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        .crop-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">滑动拼图</h1>
+
+        <div class="game-area">
+            <div class="difficulty-controls">
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary" onclick="setDifficulty(3)">3x3 ★</button>
+                    <button class="btn btn-outline-primary" onclick="setDifficulty(4)">4x4 ★★</button>
+                    <button class="btn btn-outline-primary" onclick="setDifficulty(5)">5x5 ★★★</button>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="moves">移动次数: <span id="moveCount">0</span></div>
+                <div class="timer">用时: <span id="timeElapsed">0:00</span></div>
+                <div class="best-record">最佳记录: <span id="bestRecord">-</span></div>
+            </div>
+
+            <div class="puzzle-board" id="puzzleBoard"></div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <button class="btn btn-primary" onclick="startGame()">开始游戏</button>
+                    <button class="btn btn-warning" onclick="shufflePieces()">重新打乱</button>
+                    <button class="btn btn-info" onclick="showPreview()">查看原图</button>
+                </div>
+
+                <div class="control-group">
+                    <button class="btn btn-secondary" onclick="document.getElementById('uploadInput').click()">上传图片</button>
+                    <input type="file" id="uploadInput" accept="image/*" onchange="handleImageUpload(event)">
+                    <button class="btn btn-outline-primary" onclick="showInstructions()">游戏说明</button>
+                </div>
+            </div>
+
+            <div class="example-images">
+                <img src="images/example1.jpg" class="example-image" onclick="selectExampleImage(this.src)" alt="示例图片1">
+                <img src="images/example2.jpg" class="example-image" onclick="selectExampleImage(this.src)" alt="示例图片2">
+                <img src="images/example3.jpg" class="example-image" onclick="selectExampleImage(this.src)" alt="示例图片3">
+            </div>
+        </div>
+
+        <!-- 原图预览弹窗 -->
+        <div class="modal fade" id="previewModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">原图预览</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="previewImage" class="img-fluid" alt="原图预览">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片裁剪弹窗 -->
+        <div class="modal fade" id="cropModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">裁剪图片</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="crop-area">
+                            <img id="cropImage" class="upload-preview" alt="裁剪预览">
+                            <div class="crop-frame"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" onclick="cropImage()">确定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏说明弹窗 -->
+        <div class="modal fade" id="instructionsModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">游戏说明</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <h6>游戏规则：</h6>
+                        <ul>
+                            <li>点击或拖动相邻的拼图块与空白格交换位置</li>
+                            <li>将所有拼图块还原到正确位置即可获胜</li>
+                            <li>支持自定义上传图片或使用示例图片</li>
+                        </ul>
+                        <h6 class="mt-3">难度说明：</h6>
+                        <ul>
+                            <li>3x3：★ 适合初学者</li>
+                            <li>4x4：★★ 需要一定技巧</li>
+                            <li>5x5：★★★ 挑战你的极限</li>
+                        </ul>
+                        <h6 class="mt-3">操作说明：</h6>
+                        <ul>
+                            <li>点击：直接点击相邻的拼图块移动</li>
+                            <li>拖拽：按住拼图块拖动到空白格</li>
+                            <li>上传：可以上传自己的图片，会自动裁剪</li>
+                            <li>预览：随时可以查看完整的原图</li>
+                        </ul>
+                        <h6 class="mt-3">提示：</h6>
+                        <ul>
+                            <li>观察图片特征，找到相邻块之间的关联</li>
+                            <li>先完成边角部分，再处理中间部分</li>
+                            <li>注意移动次数和用时，尽量高效完成</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏胜利弹窗 -->
+        <div class="modal fade" id="winModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">恭喜过关！</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>你完成了拼图！</p>
+                        <p>移动次数：<span id="finalMoves">0</span></p>
+                        <p>用时：<span id="finalTime">0:00</span></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                        <button type="button" class="btn btn-primary" onclick="startGame()">再玩一次</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 游戏状态
+        let currentImage = null;
+        let pieces = [];
+        let emptyCell = { row: 2, col: 2 };
+        let moveCount = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let gameStarted = false;
+        let draggedPiece = null;
+        let currentSize = 3; // 默认3x3
+
+        // 设置难度
+        function setDifficulty(size) {
+            currentSize = size;
+            emptyCell = { row: size - 1, col: size - 1 };
+            initGame();
+        }
+
+        // 初始化游戏
+        function initGame() {
+            const board = document.getElementById('puzzleBoard');
+            board.innerHTML = '';
+            pieces = [];
+            moveCount = 0;
+            document.getElementById('moveCount').textContent = '0';
+            document.getElementById('timeElapsed').textContent = '0:00';
+
+            // 如果没有选择图片，使用第一个示例图片
+            if (!currentImage) {
+                const exampleImages = document.querySelectorAll('.example-image');
+                if (exampleImages.length > 0) {
+                    selectExampleImage(exampleImages[0].src);
+                    return;
+                }
+            }
+
+            const pieceSize = Math.floor(300 / currentSize);
+
+            // 创建拼图块
+            for (let row = 0; row < currentSize; row++) {
+                for (let col = 0; col < currentSize; col++) {
+                    if (row === currentSize - 1 && col === currentSize - 1) continue; // 跳过空白格
+
+                    const piece = document.createElement('div');
+                    piece.className = 'puzzle-piece';
+                    piece.style.width = `${pieceSize - 2}px`;
+                    piece.style.height = `${pieceSize - 2}px`;
+                    piece.style.backgroundImage = `url(${currentImage})`;
+                    piece.style.backgroundSize = `${300}px ${300}px`;
+                    
+                    const bgX = (col * 300) / currentSize;
+                    const bgY = (row * 300) / currentSize;
+                    piece.style.backgroundPosition = `-${bgX}px -${bgY}px`;
+                    
+                    piece.dataset.row = row;
+                    piece.dataset.col = col;
+                    
+                    piece.style.left = `${col * pieceSize}px`;
+                    piece.style.top = `${row * pieceSize}px`;
+                    
+                    // 添加拖拽事件
+                    piece.draggable = true;
+                    piece.addEventListener('dragstart', handleDragStart);
+                    piece.addEventListener('dragend', handleDragEnd);
+                    piece.addEventListener('click', () => movePiece(piece));
+                    
+                    board.appendChild(piece);
+                    pieces.push(piece);
+                }
+            }
+
+            // 添加拖拽目标事件
+            board.addEventListener('dragover', handleDragOver);
+            board.addEventListener('drop', handleDrop);
+        }
+
+        // 拖拽事件处理
+        function handleDragStart(e) {
+            if (!gameStarted) return;
+            draggedPiece = e.target;
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            if (!draggedPiece || !gameStarted) return;
+
+            const row = parseInt(draggedPiece.dataset.row);
+            const col = parseInt(draggedPiece.dataset.col);
+
+            if (isAdjacent(row, col, emptyCell.row, emptyCell.col)) {
+                movePiece(draggedPiece);
+            }
+
+            draggedPiece = null;
+        }
+
+        // 移动拼图块
+        function movePiece(piece) {
+            if (!gameStarted) return;
+
+            const row = parseInt(piece.dataset.row);
+            const col = parseInt(piece.dataset.col);
+            const pieceSize = Math.floor(300 / currentSize);
+
+            // 检查是否可以移动
+            if (isAdjacent(row, col, emptyCell.row, emptyCell.col)) {
+                // 更新位置
+                piece.style.left = `${emptyCell.col * pieceSize}px`;
+                piece.style.top = `${emptyCell.row * pieceSize}px`;
+                piece.dataset.row = emptyCell.row;
+                piece.dataset.col = emptyCell.col;
+
+                // 更新空白格位置
+                emptyCell.row = row;
+                emptyCell.col = col;
+
+                // 更新移动次数
+                moveCount++;
+                document.getElementById('moveCount').textContent = moveCount;
+
+                // 检查是否完成
+                if (checkWin()) {
+                    endGame();
+                }
+            }
+        }
+
+        // 检查是否相邻
+        function isAdjacent(row1, col1, row2, col2) {
+            return (Math.abs(row1 - row2) === 1 && col1 === col2) ||
+                   (Math.abs(col1 - col2) === 1 && row1 === row2);
+        }
+
+        // 检查是否完成
+        function checkWin() {
+            for (const piece of pieces) {
+                const row = parseInt(piece.dataset.row);
+                const col = parseInt(piece.dataset.col);
+                const bgPos = piece.style.backgroundPosition.split(' ');
+                const expectedBgX = -(col * 300 / currentSize);
+                const expectedBgY = -(row * 300 / currentSize);
+                
+                if (parseInt(bgPos[0]) !== expectedBgX || parseInt(bgPos[1]) !== expectedBgY) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 打乱拼图
+        function shufflePieces() {
+            const moves = [];
+            // 生成随机移动序列
+            for (let i = 0; i < 100; i++) {
+                const possibleMoves = [];
+                if (emptyCell.row > 0) possibleMoves.push({row: emptyCell.row - 1, col: emptyCell.col});
+                if (emptyCell.row < currentSize - 1) possibleMoves.push({row: emptyCell.row + 1, col: emptyCell.col});
+                if (emptyCell.col > 0) possibleMoves.push({row: emptyCell.row, col: emptyCell.col - 1});
+                if (emptyCell.col < currentSize - 1) possibleMoves.push({row: emptyCell.row, col: emptyCell.col + 1});
+
+                const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                const piece = getPieceAt(move.row, move.col);
+                if (piece) {
+                    movePiece(piece);
+                    moves.push({row: move.row, col: move.col});
+                }
+            }
+
+            // 重置移动次数
+            moveCount = 0;
+            document.getElementById('moveCount').textContent = moveCount;
+        }
+
+        // 获取指定位置的拼图块
+        function getPieceAt(row, col) {
+            return pieces.find(piece => 
+                parseInt(piece.dataset.row) === row && 
+                parseInt(piece.dataset.col) === col
+            );
+        }
+
+        // 处理图片上传
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // 创建图片对象以获取尺寸
+                    const img = new Image();
+                    img.onload = function() {
+                        // 显示裁剪弹窗
+                        document.getElementById('cropImage').src = e.target.result;
+                        const cropModal = new bootstrap.Modal(document.getElementById('cropModal'));
+                        cropModal.show();
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 裁剪图片
+        function cropImage() {
+            const img = document.getElementById('cropImage');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = 300;
+            canvas.height = 300;
+
+            // 计算裁剪区域
+            const size = Math.min(img.naturalWidth, img.naturalHeight);
+            const x = (img.naturalWidth - size) / 2;
+            const y = (img.naturalHeight - size) / 2;
+
+            // 绘制裁剪后的图片
+            ctx.drawImage(img, x, y, size, size, 0, 0, 300, 300);
+            
+            // 更新图片
+            currentImage = canvas.toDataURL('image/jpeg');
+            document.getElementById('previewImage').src = currentImage;
+            
+            // 关闭裁剪弹窗并初始化游戏
+            bootstrap.Modal.getInstance(document.getElementById('cropModal')).hide();
+            initGame();
+        }
+
+        // 选择示例图片
+        function selectExampleImage(src) {
+            currentImage = src;
+            document.getElementById('previewImage').src = src;
+            initGame();
+        }
+
+        // 显示原图预览
+        function showPreview() {
+            if (currentImage) {
+                const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+                previewModal.show();
+            }
+        }
+
+        // 开始游戏
+        function startGame() {
+            if (!currentImage) {
+                initGame();
+                return;
+            }
+
+            gameStarted = true;
+            shufflePieces();
+            startTimer();
+        }
+
+        // 开始计时
+        function startTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        // 更新计时器
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timeElapsed').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 结束游戏
+        function endGame() {
+            gameStarted = false;
+            clearInterval(timerInterval);
+            
+            const finalTime = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('finalMoves').textContent = moveCount;
+            document.getElementById('finalTime').textContent = 
+                `${Math.floor(finalTime / 60)}:${(finalTime % 60).toString().padStart(2, '0')}`;
+
+            const winModal = new bootstrap.Modal(document.getElementById('winModal'));
+            winModal.show();
+        }
+
+        // 显示游戏说明
+        function showInstructions() {
+            const instructionsModal = new bootstrap.Modal(document.getElementById('instructionsModal'));
+            instructionsModal.show();
+        }
+
+        // 初始化示例图片
+        window.onload = function() {
+            // 预加载示例图片
+            const exampleImages = [
+                'images/example1.jpg',
+                'images/example2.jpg',
+                'images/example3.jpg'
+            ];
+            
+            exampleImages.forEach(src => {
+                const img = new Image();
+                img.src = src;
+            });
+
+            // 初始化游戏
+            initGame();
+        };
+    </script>
+</body>
+</html> 

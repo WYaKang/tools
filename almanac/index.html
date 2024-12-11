@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老黄历 - 实用工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .calendar {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            overflow: hidden;
+            color: #222222;
+            width: 1000px;
+            border: 2px solid #F6D07B;
+            display: flex;
+            flex-direction: row;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .calendar > div {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .calendar .center {
+            flex: 2;
+        }
+
+        .calendar .border-bottom {
+            border-bottom: 1px solid #F4C493;
+        }
+
+        .calendar .border-right {
+            border-right: 1px solid #F4C493;
+        }
+
+        .calendar .bg {
+            background-color: #FCF8EF;
+        }
+
+        .calendar .lunar {
+            height: 60px;
+            line-height: 60px;
+            text-align: center;
+        }
+
+        .calendar .row {
+            height: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .calendar .row > div {
+            flex: 1;
+        }
+
+        .calendar .col {
+            flex-direction: row;
+        }
+
+        .calendar div.label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #BC2F3F;
+            width: 80px;
+            text-align: left;
+            flex: none;
+            text-indent: 10px;
+        }
+
+        .calendar .grid {
+            height: 182px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .calendar .grid .col2 {
+            flex: 1;
+            width: 50%;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .calendar .grid .col2 > div {
+            flex: auto;
+        }
+
+        .calendar .grid .col2 > div.bar {
+            flex: none;
+            width: 30px;
+            margin-left: 20px;
+        }
+
+        .calendar .grid .col2 div.label {
+            color: #000000;
+        }
+
+        .calendar .yj-container {
+            height: 180px;
+            overflow: hidden;
+        }
+
+        .calendar .yj-container .yj {
+            margin: 20px auto;
+            position: relative;
+            width: 36px;
+            height: 36px;
+            line-height: 36px;
+            text-align: center;
+            border-radius: 50%;
+            color: #FFFFFF;
+        }
+
+        .calendar .yj-container .yj::before,
+        .calendar .yj-container .yj::after {
+            position: absolute;
+            content: '';
+            left: -2px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            z-index: -1;
+        }
+
+        .calendar .yj-container .yj::after {
+            width: 44px;
+            height: 44px;
+            z-index: -2;
+        }
+
+        .calendar .yj-container .yi {
+            background: #5CB85C;
+        }
+
+        .calendar .yj-container .ji {
+            background: #D9534F;
+        }
+
+        .calendar .yj-container .yi::before,
+        .calendar .yj-container .ji::before {
+            background: #FFFFFF;
+        }
+
+        .calendar .yj-container .yi::after,
+        .calendar .yj-container .ji::after {
+            left: -4px;
+            top: -4px;
+        }
+
+        .calendar .yj-container .yi::after {
+            background: #5CB85C;
+        }
+
+        .calendar .yj-container .ji::after {
+            background: #D9534F;
+        }
+
+        .calendar .js {
+            height: 165px;
+            overflow: hidden;
+        }
+
+        .calendar .js .label {
+            margin-top: 10px;
+        }
+
+        .calendar .yj-container ul,
+        .calendar .js ul {
+            list-style: none;
+            padding: 0 10px;
+        }
+
+        .calendar .yj-container ul li,
+        .calendar .js ul li {
+            float: left;
+            width: 25%;
+            height: 32px;
+            line-height: 32px;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        .calendar .today {
+            margin: 0 auto;
+            width: 400px;
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            font-size: 120px;
+            font-weight: bold;
+            color: #BC2F3F;
+            line-height: 177px;
+            align-items: center;
+        }
+
+        .calendar .today a {
+            width: 0;
+            height: 0;
+            border: 30px solid transparent;
+            font-size: 0;
+            line-height: 0;
+            cursor: pointer;
+        }
+
+        .calendar .today a.prev {
+            border-right-color: #BC2F3F;
+        }
+
+        .calendar .today a.next {
+            border-left-color: #BC2F3F;
+        }
+
+        .calendar .bar {
+            position: relative;
+            width: 30px;
+            height: 120px;
+            color: #FFFFFF;
+            text-align: center;
+            background: #BC2F3F;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            writing-mode: vertical-lr;
+            letter-spacing: 2px;
+        }
+
+        .calendar .bar::before,
+        .calendar .bar::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: -6px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #BC2F3F;
+            margin-left: -8px;
+        }
+
+        .calendar .bar::after {
+            top: auto;
+            bottom: -6px;
+        }
+
+        .calendar .inputs {
+            position: relative;
+            display: flex;
+            padding: 20px;
+            justify-content: center;
+        }
+
+        .calendar .inputs div {
+            position: relative;
+            margin: 0 10px;
+        }
+
+        .calendar .inputs input,
+        .calendar .inputs select {
+            border: 1px solid #D7D9E0;
+            box-sizing: border-box;
+            padding: 7px;
+            border-radius: 6px;
+            line-height: 1;
+            position: relative;
+            background: #FFFFFF;
+            width: 80px;
+            margin-right: 6px;
+            text-align: center;
+            font-size: 20px;
+            outline: none;
+        }
+
+        .calendar .inputs select {
+            appearance: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar">
+        <div class="border-right">
+            <div class="row col border-bottom">
+                <div class="label">年份</div>
+                <div id="yearGanZhi"></div>
+                <div id="yearShengXiao"></div>
+                <div id="yearNaYin"></div>
+            </div>
+            <div class="row col border-bottom">
+                <div class="label">月份</div>
+                <div id="monthGanZhi"></div>
+                <div id="monthShengXiao"></div>
+                <div id="monthNaYin"></div>
+            </div>
+            <div class="row col border-bottom">
+                <div class="label">日期</div>
+                <div id="dayGanZhi"></div>
+                <div id="dayShengXiao"></div>
+                <div id="dayNaYin"></div>
+            </div>
+            <div class="row col bg border-bottom">
+                <div id="prevJieQi"></div>
+            </div>
+            <div class="yj-container border-bottom">
+                <div class="yj yi">宜</div>
+                <ul id="yiList"></ul>
+            </div>
+            <div class="border-bottom js">
+                <div>
+                    <div class="label">吉神宜趋</div>
+                    <ul id="jiShenList"></ul>
+                </div>
+            </div>
+            <div class="row col bg">
+                <div class="label">彭祖</div>
+                <div id="pengZuGan"></div>
+            </div>
+            <div class="row col bg border-bottom">
+                <div class="label">百忌</div>
+                <div id="pengZuZhi"></div>
+            </div>
+            <div class="row col">
+                <div class="label">月名</div>
+                <div id="yueMing"></div>
+            </div>
+            <div class="row col">
+                <div class="label">月相</div>
+                <div id="yueXiang"></div>
+            </div>
+            <div class="row col">
+                <div class="label">物候</div>
+                <div id="wuHou"></div>
+            </div>
+        </div>
+        <div class="center border-right bg">
+            <div class="border-bottom">
+                <div class="inputs">
+                    <div>
+                        <input type="number" id="yearInput">年
+                    </div>
+                    <div>
+                        <select id="monthSelect">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                        </select>月
+                    </div>
+                    <div>
+                        <input type="number" id="dayInput">日
+                    </div>
+                </div>
+                <div>
+                    <div id="gongLiInfo" style="text-align: center;"></div>
+                    <div class="today">
+                        <a href="javascript:void(0);" class="prev" id="prevDay"></a>
+                        <span id="currentDay"></span>
+                        <a href="javascript:void(0);" class="next" id="nextDay"></a>
+                    </div>
+                    <div class="lunar" id="nongLiInfo"></div>
+                </div>
+            </div>
+            <div class="grid border-bottom">
+                <div class="col2 border-right">
+                    <div class="bar">财神位</div>
+                    <div>
+                        <div class="row col">
+                            <div class="label">喜神</div>
+                            <div id="positionXi"></div>
+                        </div>
+                        <div class="row col">
+                            <div class="label">福神</div>
+                            <div id="positionFu"></div>
+                        </div>
+                        <div class="row col">
+                            <div class="label">财神</div>
+                            <div id="positionCai"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col2">
+                    <div class="bar">阴阳贵神</div>
+                    <div>
+                        <div class="row col">
+                            <div class="label">阳贵神</div>
+                            <div id="positionYangGui"></div>
+                        </div>
+                        <div class="row col">
+                            <div class="label">阴贵神</div>
+                            <div id="positionYinGui"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid">
+                <div class="col2 border-right">
+                    <div class="bar">空亡所值</div>
+                    <div>
+                        <div class="row col">
+                            <div class="label">年空亡</div>
+                            <div id="yearKongWang"></div>
+                        </div>
+                        <div class="row col">
+                            <div class="label">月空亡</div>
+                            <div id="monthKongWang"></div>
+                        </div>
+                        <div class="row col">
+                            <div class="label">日空亡</div>
+                            <div id="dayKongWang"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col2">
+                    <div class="bar">九宫飞星</div>
+                    <div>
+                        <div class="row col">
+                            <div class="label">九星</div>
+                            <div id="dayJiuXing"></div>
+                        </div>
+                        <div class="row col">
+                            <div class="label">二十八宿</div>
+                            <div id="xiu"></div>
+                        </div>
+                        <div class="row col">
+                            <div id="yearZhiShui"></div>
+                            <div id="yearDeJin"></div>
+                        </div>
+                        <div class="row col">
+                            <div id="yearFenBing"></div>
+                            <div id="yearGenTian"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="row col border-bottom">
+                <div class="label">相冲</div>
+                <div id="dayChong"></div>
+            </div>
+            <div class="row col border-bottom">
+                <div class="label">值神</div>
+                <div id="dayZhiShen"></div>
+            </div>
+            <div class="row col border-bottom">
+                <div class="label">十二神</div>
+                <div id="dayTianShen"></div>
+            </div>
+            <div class="row col bg border-bottom">
+                <div id="nextJieQi"></div>
+            </div>
+            <div class="yj-container border-bottom">
+                <div class="yj ji">忌</div>
+                <ul id="jiList"></ul>
+            </div>
+            <div class="border-bottom js">
+                <div>
+                    <div class="label">凶煞宜忌</div>
+                    <ul id="xiongShaList"></ul>
+                </div>
+            </div>
+            <div class="row col bg">
+                <div class="label">本月胎神</div>
+                <div id="monthTaiShen"></div>
+            </div>
+            <div class="row col bg border-bottom">
+                <div class="label">今日胎神</div>
+                <div id="dayTaiShen"></div>
+            </div>
+            <div class="row col">
+                <div class="label">岁煞</div>
+                <div id="daySha"></div>
+            </div>
+            <div class="row col">
+                <div class="label">六曜</div>
+                <div id="liuYao"></div>
+            </div>
+            <div class="row col">
+                <div class="label">日禄</div>
+                <div id="dayLu"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lunar-javascript/1.6.12/lunar.min.js"></script>
+    <script>
+        window.onload = function() {
+            const state = {
+                year: new Date().getFullYear(),
+                month: new Date().getMonth() + 1,
+                day: new Date().getDate()
+            };
+
+            function render() {
+                const solar = Solar.fromYmd(state.year, state.month, state.day);
+                const lunar = solar.getLunar();
+
+                // 更新年月日输入框
+                document.getElementById('yearInput').value = state.year;
+                document.getElementById('monthSelect').value = state.month;
+                document.getElementById('dayInput').value = state.day;
+                document.getElementById('currentDay').textContent = state.day;
+
+                // 更新公历和农历信息
+                document.getElementById('gongLiInfo').textContent = `公历 ${state.year}年 ${state.month}月 ${state.day}日 星期${solar.getWeekInChinese()} ${solar.getXingZuo()}座`;
+                document.getElementById('nongLiInfo').textContent = `农历 ${lunar.getYearInChinese()}年 ${lunar.getMonthInChinese()}月 ${lunar.getDayInChinese()}`;
+
+                // 更新年份信息
+                document.getElementById('yearGanZhi').textContent = `${lunar.getYearInGanZhi()}年`;
+                document.getElementById('yearShengXiao').textContent = `属${lunar.getYearShengXiao()}`;
+                document.getElementById('yearNaYin').textContent = lunar.getYearNaYin();
+
+                // 更新月份信息
+                document.getElementById('monthGanZhi').textContent = `${lunar.getMonthInGanZhi()}月`;
+                document.getElementById('monthShengXiao').textContent = `属${lunar.getMonthShengXiao()}`;
+                document.getElementById('monthNaYin').textContent = lunar.getMonthNaYin();
+
+                // 更新日期信息
+                document.getElementById('dayGanZhi').textContent = `${lunar.getDayInGanZhi()}日`;
+                document.getElementById('dayShengXiao').textContent = `属${lunar.getDayShengXiao()}`;
+                document.getElementById('dayNaYin').textContent = lunar.getDayNaYin();
+
+                // 更新节气信息
+                const prevJq = lunar.getPrevJieQi(true);
+                const prevJqSolar = prevJq.getSolar();
+                document.getElementById('prevJieQi').textContent = `节气${prevJq.getName()}：${prevJqSolar.toYmd()} 周${prevJqSolar.getWeekInChinese()}`;
+
+                const nextJq = lunar.getNextJieQi(true);
+                const nextJqSolar = nextJq.getSolar();
+                document.getElementById('nextJieQi').textContent = `节气${nextJq.getName()}：${nextJqSolar.toYmd()} 周${nextJqSolar.getWeekInChinese()}`;
+
+                // 更新宜忌
+                document.getElementById('yiList').innerHTML = lunar.getDayYi().map(item => `<li>${item}</li>`).join('');
+                document.getElementById('jiList').innerHTML = lunar.getDayJi().map(item => `<li>${item}</li>`).join('');
+
+                // 更新吉神凶煞
+                document.getElementById('jiShenList').innerHTML = lunar.getDayJiShen().map(item => `<li>${item}</li>`).join('');
+                document.getElementById('xiongShaList').innerHTML = lunar.getDayXiongSha().map(item => `<li>${item}</li>`).join('');
+
+                // 更新彭祖百忌
+                document.getElementById('pengZuGan').textContent = lunar.getPengZuGan();
+                document.getElementById('pengZuZhi').textContent = lunar.getPengZuZhi();
+
+                // 更新月相信息
+                document.getElementById('yueMing').textContent = lunar.getSeason();
+                document.getElementById('yueXiang').textContent = `${lunar.getYueXiang()}月`;
+                document.getElementById('wuHou').textContent = `${lunar.getHou()} ${lunar.getWuHou()}`;
+
+                // 更新神煞信息
+                document.getElementById('dayChong').textContent = `${lunar.getDayShengXiao()}日冲${lunar.getDayChongDesc()}`;
+                document.getElementById('dayZhiShen').textContent = lunar.getZhiXing();
+                document.getElementById('dayTianShen').textContent = `${lunar.getDayTianShen()}(${lunar.getDayTianShenType()}日)`;
+
+                // 更新胎神信息
+                document.getElementById('monthTaiShen').textContent = lunar.getMonthPositionTai();
+                document.getElementById('dayTaiShen').textContent = lunar.getDayPositionTai();
+
+                // 更新其他信息
+                document.getElementById('daySha').textContent = lunar.getDaySha();
+                document.getElementById('liuYao').textContent = lunar.getLiuYao();
+                document.getElementById('dayLu').textContent = lunar.getDayLu();
+
+                // 更新方位信息
+                document.getElementById('positionXi').textContent = lunar.getPositionXiDesc();
+                document.getElementById('positionFu').textContent = lunar.getPositionFuDesc();
+                document.getElementById('positionCai').textContent = lunar.getPositionCaiDesc();
+                document.getElementById('positionYangGui').textContent = lunar.getPositionYangGuiDesc();
+                document.getElementById('positionYinGui').textContent = lunar.getPositionYinGuiDesc();
+
+                // 更新空亡信息
+                document.getElementById('yearKongWang').textContent = lunar.getYearXunKong();
+                document.getElementById('monthKongWang').textContent = lunar.getMonthXunKong();
+                document.getElementById('dayKongWang').textContent = lunar.getDayXunKong();
+
+                // 更新九宫飞星
+                const dayNineStar = lunar.getDayNineStar();
+                document.getElementById('dayJiuXing').textContent = dayNineStar.toString();
+                document.getElementById('xiu').textContent = `${lunar.getGong()}方${lunar.getXiu()}${lunar.getZheng()}${lunar.getAnimal()}(${lunar.getXiuLuck()})`;
+
+                const lunarYear = LunarYear.fromYear(lunar.getYear());
+                document.getElementById('yearZhiShui').textContent = lunarYear.getZhiShui();
+                document.getElementById('yearDeJin').textContent = lunarYear.getDeJin();
+                document.getElementById('yearFenBing').textContent = lunarYear.getFenBing();
+                document.getElementById('yearGenTian').textContent = lunarYear.getGengTian();
+            }
+
+            // 前一天
+            function prevDay() {
+                const solar = Solar.fromYmd(state.year, state.month, state.day).next(-1);
+                state.year = solar.getYear();
+                state.month = solar.getMonth();
+                state.day = solar.getDay();
+                render();
+            }
+
+            // 后一天
+            function nextDay() {
+                const solar = Solar.fromYmd(state.year, state.month, state.day).next(1);
+                state.year = solar.getYear();
+                state.month = solar.getMonth();
+                state.day = solar.getDay();
+                render();
+            }
+
+            // 初始化事件监听
+            function initEventListeners() {
+                document.getElementById('prevDay').addEventListener('click', prevDay);
+                document.getElementById('nextDay').addEventListener('click', nextDay);
+
+                document.getElementById('yearInput').addEventListener('change', (e) => {
+                    const year = parseInt(e.target.value, 10);
+                    if (!isNaN(year)) {
+                        state.year = year;
+                        render();
+                    }
+                });
+
+                document.getElementById('monthSelect').addEventListener('change', (e) => {
+                    const month = parseInt(e.target.value, 10);
+                    if (!isNaN(month)) {
+                        state.month = month;
+                        render();
+                    }
+                });
+
+                document.getElementById('dayInput').addEventListener('change', (e) => {
+                    const day = parseInt(e.target.value, 10);
+                    if (!isNaN(day)) {
+                        state.day = day;
+                        render();
+                    }
+                });
+            }
+
+            // 初始化
+            initEventListeners();
+            render();
+        };
+    </script>
+</body>
+</html> 
